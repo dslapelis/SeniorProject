@@ -1,11 +1,11 @@
 package com.lunarstack.seniorproject;
 
-import android.app.Activity;
 import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.BaseAdapter;
+import android.widget.ArrayAdapter;
 import android.widget.TextView;
 import java.util.ArrayList;
 
@@ -13,16 +13,18 @@ import java.util.ArrayList;
  * Created by danielslapelis on 4/16/18.
  */
 
-public class MessagesListAdapter extends BaseAdapter {
+public class MessagesListAdapter extends ArrayAdapter<Message> {
 
-    private Activity mActivity;
+    Context mContext;
     private ArrayList<Message> mMessagesList;
     private static LayoutInflater mInflater = null;
+    final String TAG = "Message Adapter";
 
-    public MessagesListAdapter (Activity activity, ArrayList<Message> list) {
-        this.mActivity = activity;
+    public MessagesListAdapter (ArrayList<Message> list, Context context) {
+        super(context, R.layout.row, list);
+        this.mContext = context;
         this.mMessagesList = list;
-        mInflater = (LayoutInflater) activity.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        mInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
     }
 
     @Override
@@ -31,8 +33,8 @@ public class MessagesListAdapter extends BaseAdapter {
     }
 
     @Override
-    public Object getItem(int position) {
-        return position;
+    public Message getItem(int position) {
+        return mMessagesList.get(position);
     }
 
     @Override
@@ -48,15 +50,12 @@ public class MessagesListAdapter extends BaseAdapter {
         }
 
         Message curr = mMessagesList.get(position);
+        Log.d(TAG, "Message status: " + curr.getStatus());
 
-        // different cases for whether message was sent or received
-        if(curr.getStatus() == 0) {
-            TextView sent = (TextView) vi.findViewById(R.id.sentText);
-            sent.setText(curr.getMessage());
-        } else {
-            TextView received = (TextView) vi.findViewById(R.id.receivedText);
-            received.setText(curr.getMessage());
-        }
+
+        TextView message = (TextView) vi.findViewById(R.id.message);
+        message.setText(curr.getMessage());
+
         return vi;
     }
 }

@@ -43,7 +43,7 @@ public class MainActivity extends ConnectionsActivity {
 
     private String mDestructCode;
 
-    private ArrayList<String> mMessages;
+    private ArrayList<Message> mMessages;
     private MessagesListAdapter mMessagesListAdapter;
 
     private final SimpleArrayMap<Long, NotificationCompat.Builder> incomingPayloads = new SimpleArrayMap<>();
@@ -62,7 +62,7 @@ public class MainActivity extends ConnectionsActivity {
 
         mMessages = new ArrayList<>();
         //mMessagesListAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, mMessages);
-        mMessagesListAdapter = new MessagesListAdapter(this, mMessages);
+        mMessagesListAdapter = new MessagesListAdapter(mMessages, getApplicationContext());
         mMessagesListView.setAdapter(mMessagesListAdapter);
         mMessagesListView.setDivider(null);
 
@@ -77,27 +77,33 @@ public class MainActivity extends ConnectionsActivity {
                     // value.
                     if(temp.charAt(0) == '!') {
                         mDestructCode = temp.substring(1, temp.length()); // set our destruct code
-                        mMessages.add("***ALERT*** You have set your self-destruct passphrase to be " +
-                                "\"" + mDestructCode + "\"");
+                        Message newMessage =
+                                new Message(("***ALERT*** You've set your self-destruct code" +
+                                        " to be \"" + mDestructCode + "\""), 1);
+                        mMessages.add(newMessage);
                         mMessagesListAdapter.notifyDataSetChanged();
 
                         // clear textbox
                         mSendEditText.setText("");
 
                         // focuses on the bottom of the list
-                        mMessagesListView.setSelection(mMessagesListAdapter.getCount()-1);
+                        jumpToBottom();
                         return;
                     }
 
                     byte[] array = temp.getBytes();
                     send(fromBytes(array));
                     mSendEditText.setText(""); // clear textbox
-                    mMessages.add(temp);
 
+                    Message newMessage = new Message(temp, 0);
+
+                    mMessages.add(newMessage);
                     mMessagesListAdapter.notifyDataSetChanged();
 
                     // focuses on the bottom of the list
-                    mMessagesListView.setSelection(mMessagesListAdapter.getCount()-1);
+                    jumpToBottom();
+
+                    Log.d(TAG, Integer.toString(mMessages.size()));
                 }
             }
         });
@@ -129,9 +135,6 @@ public class MainActivity extends ConnectionsActivity {
                 this, getString(R.string.toast_connected, endpoint.getName()), Toast.LENGTH_SHORT)
                 .show();
         setState(State.CONNECTED);
-        /*String temp = "hello";
-        byte[] array = temp.getBytes();
-        send(fromBytes(array));*/
     }
 
     @Override
@@ -155,8 +158,10 @@ public class MainActivity extends ConnectionsActivity {
         if(payload.getType() == Payload.Type.BYTES) {
             String message = new String(payload.asBytes());
             Log.d(TAG, "Payload from " + endpoint + " -- " + message);
-            mMessages.add(message);
+            Message newMessage = new Message(message, 1);
+            mMessages.add(newMessage);
             mMessagesListAdapter.notifyDataSetChanged();
+            jumpToBottom();
         }
     }
 
@@ -232,6 +237,11 @@ public class MainActivity extends ConnectionsActivity {
     /** @return The current state. */
     private State getState() {
         return mState;
+    }
+
+    private void jumpToBottom() {
+        // focuses on the bottom of the list
+        mMessagesListView.setSelection(mMessagesListAdapter.getCount()-1);
     }
 
 
