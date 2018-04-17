@@ -27,7 +27,7 @@ import static com.google.android.gms.nearby.connection.Payload.fromBytes;
 public class MainActivity extends ConnectionsActivity {
 
     private final String TAG = "com.lunarstack.com.seniorproject.MainActivity";
-    private static final Strategy STRATEGY = Strategy.P2P_STAR;
+    private static final Strategy STRATEGY = Strategy.P2P_CLUSTER;
     private static final String SERVICE_ID =
             "com.lunarstack.com.seniorproject.SERVICE_ID";
     /**
