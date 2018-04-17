@@ -1,20 +1,22 @@
 package com.lunarstack.seniorproject;
 
-import android.app.NotificationManager;
-import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.util.SimpleArrayMap;
 import android.util.Log;
+import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.google.android.gms.nearby.Nearby;
 import com.google.android.gms.nearby.connection.ConnectionInfo;
 import com.google.android.gms.nearby.connection.Payload;
 import com.google.android.gms.nearby.connection.Strategy;
 
-import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.Random;
 
 import static com.google.android.gms.nearby.connection.Payload.fromBytes;
@@ -33,6 +35,15 @@ public class MainActivity extends ConnectionsActivity {
     private State mState = State.UNKNOWN;
     private String mName;
 
+    private EditText mSendEditText;
+    private Button mSendButton;
+    private ListView mMessagesListView;
+
+    private String mDestructCode;
+
+    private ArrayList<String> mMessages;
+    private ArrayAdapter<String> mMessagesListAdapter;
+
     private final SimpleArrayMap<Long, NotificationCompat.Builder> incomingPayloads = new SimpleArrayMap<>();
     private final SimpleArrayMap<Long, NotificationCompat.Builder> outgoingPayloads = new SimpleArrayMap<>();
 
@@ -43,6 +54,40 @@ public class MainActivity extends ConnectionsActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        mSendEditText = (EditText) findViewById(R.id.sendEditText);
+        mSendButton = (Button) findViewById(R.id.sendButton);
+        mMessagesListView = (ListView) findViewById(R.id.messagesList);
+
+        mMessages = new ArrayList<>();
+        mMessagesListAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, mMessages);
+        mMessagesListView.setAdapter(mMessagesListAdapter);
+
+        mSendButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String temp = mSendEditText.getText().toString();
+                // if there is text to send, send it to our peer
+                if(temp != null) {
+                    // initialize a buffer to read in the first character of the edit box...if it is
+                    // an exclamation point we will read the following text in as the self destruct
+                    // value.
+                    char buf[] = new char[1];
+                    temp.getChars(0,0, buf, 0);
+                    char first = buf[0];
+
+                    if(Character.toString(first).equals("!")) {
+                        mDestructCode = temp.substring(1, temp.length()); // set our destruct code
+                    }
+
+                    byte[] array = temp.getBytes();
+                    send(fromBytes(array));
+                    mSendEditText.setText(""); // clear textbox
+                    mMessages.add(temp);
+
+                    mMessagesListAdapter.notifyDataSetChanged();
+                }
+            }
+        });
 
         mName = generateRandomName();
         setState(State.SEARCHING);
@@ -71,9 +116,9 @@ public class MainActivity extends ConnectionsActivity {
                 this, getString(R.string.toast_connected, endpoint.getName()), Toast.LENGTH_SHORT)
                 .show();
         setState(State.CONNECTED);
-        String temp = "hello";
+        /*String temp = "hello";
         byte[] array = temp.getBytes();
-        send(fromBytes(array));
+        send(fromBytes(array));*/
     }
 
     @Override
@@ -97,6 +142,8 @@ public class MainActivity extends ConnectionsActivity {
         if(payload.getType() == Payload.Type.BYTES) {
             String message = new String(payload.asBytes());
             Log.d(TAG, "Payload from " + endpoint + " -- " + message);
+            mMessages.add(message);
+            mMessagesListAdapter.notifyDataSetChanged();
         }
     }
 
