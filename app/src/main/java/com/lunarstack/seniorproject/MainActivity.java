@@ -1,10 +1,12 @@
 package com.lunarstack.seniorproject;
 
 import android.os.Bundle;
+import android.support.constraint.ConstraintLayout;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.util.SimpleArrayMap;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -42,7 +44,7 @@ public class MainActivity extends ConnectionsActivity {
     private String mDestructCode;
 
     private ArrayList<String> mMessages;
-    private ArrayAdapter<String> mMessagesListAdapter;
+    private MessagesListAdapter mMessagesListAdapter;
 
     private final SimpleArrayMap<Long, NotificationCompat.Builder> incomingPayloads = new SimpleArrayMap<>();
     private final SimpleArrayMap<Long, NotificationCompat.Builder> outgoingPayloads = new SimpleArrayMap<>();
@@ -59,24 +61,32 @@ public class MainActivity extends ConnectionsActivity {
         mMessagesListView = (ListView) findViewById(R.id.messagesList);
 
         mMessages = new ArrayList<>();
-        mMessagesListAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, mMessages);
+        //mMessagesListAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, mMessages);
+        mMessagesListAdapter = new MessagesListAdapter(this, mMessages);
         mMessagesListView.setAdapter(mMessagesListAdapter);
+        mMessagesListView.setDivider(null);
 
         mSendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 String temp = mSendEditText.getText().toString();
                 // if there is text to send, send it to our peer
-                if(temp != null) {
+                if(!temp.isEmpty()) {
                     // initialize a buffer to read in the first character of the edit box...if it is
                     // an exclamation point we will read the following text in as the self destruct
                     // value.
-                    char buf[] = new char[1];
-                    temp.getChars(0,0, buf, 0);
-                    char first = buf[0];
-
-                    if(Character.toString(first).equals("!")) {
+                    if(temp.charAt(0) == '!') {
                         mDestructCode = temp.substring(1, temp.length()); // set our destruct code
+                        mMessages.add("***ALERT*** You have set your self-destruct passphrase to be " +
+                                "\"" + mDestructCode + "\"");
+                        mMessagesListAdapter.notifyDataSetChanged();
+
+                        // clear textbox
+                        mSendEditText.setText("");
+
+                        // focuses on the bottom of the list
+                        mMessagesListView.setSelection(mMessagesListAdapter.getCount()-1);
+                        return;
                     }
 
                     byte[] array = temp.getBytes();
@@ -85,6 +95,9 @@ public class MainActivity extends ConnectionsActivity {
                     mMessages.add(temp);
 
                     mMessagesListAdapter.notifyDataSetChanged();
+
+                    // focuses on the bottom of the list
+                    mMessagesListView.setSelection(mMessagesListAdapter.getCount()-1);
                 }
             }
         });
