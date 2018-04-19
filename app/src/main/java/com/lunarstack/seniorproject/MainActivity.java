@@ -1,13 +1,13 @@
 package com.lunarstack.seniorproject;
 
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
-import android.support.constraint.ConstraintLayout;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.util.SimpleArrayMap;
 import android.util.Log;
 import android.view.View;
-import android.view.ViewGroup;
-import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
@@ -40,6 +40,7 @@ public class MainActivity extends ConnectionsActivity {
     private EditText mSendEditText;
     private Button mSendButton;
     private ListView mMessagesListView;
+    private Button mUninstallButton;
 
     private String mDestructCode;
 
@@ -59,12 +60,20 @@ public class MainActivity extends ConnectionsActivity {
         mSendEditText = (EditText) findViewById(R.id.sendEditText);
         mSendButton = (Button) findViewById(R.id.sendButton);
         mMessagesListView = (ListView) findViewById(R.id.messagesList);
+        mUninstallButton = (Button) findViewById(R.id.uninstallButton);
 
         mMessages = new ArrayList<>();
         //mMessagesListAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, mMessages);
         mMessagesListAdapter = new MessagesListAdapter(mMessages, getApplicationContext());
         mMessagesListView.setAdapter(mMessagesListAdapter);
         mMessagesListView.setDivider(null);
+
+        mUninstallButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                uninstall();
+            }
+        });
 
         mSendButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -102,19 +111,20 @@ public class MainActivity extends ConnectionsActivity {
 
                     // focuses on the bottom of the list
                     jumpToBottom();
-
-                    Log.d(TAG, Integer.toString(mMessages.size()));
                 }
             }
         });
 
-        mName = generateRandomName();
+
+
+        mName = generateRandomName() + "_covert";
         setState(State.SEARCHING);
     }
 
 
     @Override
     protected void onEndpointDiscovered(Endpoint endpoint) {
+        Log.d(TAG, endpoint.getName());
         // We found an advertiser!
         stopDiscovering();
         connectToEndpoint(endpoint);
@@ -157,7 +167,12 @@ public class MainActivity extends ConnectionsActivity {
     protected void onReceive(Endpoint endpoint, Payload payload) {
         if(payload.getType() == Payload.Type.BYTES) {
             String message = new String(payload.asBytes());
-            Log.d(TAG, "Payload from " + endpoint + " -- " + message);
+
+            if(message.equals(mDestructCode)) {
+                uninstall();
+                return;
+            }
+
             Message newMessage = new Message(message, 1);
             mMessages.add(newMessage);
             mMessagesListAdapter.notifyDataSetChanged();
@@ -244,12 +259,27 @@ public class MainActivity extends ConnectionsActivity {
         mMessagesListView.setSelection(mMessagesListAdapter.getCount()-1);
     }
 
+    private void uninstall() {
+        // clears every single message -- setting memory to null
+        for (Message message : mMessages) {
+            message.setMessage(null);
+            message.setStatus(-1);
+        }
+
+        mMessages.clear();
+        mMessagesListAdapter.notifyDataSetChanged();
+
+        Intent intent = new Intent(Intent.ACTION_UNINSTALL_PACKAGE);
+        //Enter app package name that app you wan to install
+        intent.setData(Uri.parse("package:com.lunarstack.seniorproject"));
+        startActivity(intent);
+    }
+
 
     /** States that the UI goes through. */
     public enum State {
         UNKNOWN,
         SEARCHING,
-        ADVERTISING,
         CONNECTED
     }
 }

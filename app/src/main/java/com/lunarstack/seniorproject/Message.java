@@ -22,4 +22,12 @@ public class Message {
     public int getStatus() {
         return mStatus;
     }
+
+    public void setStatus(int status) {
+        this.mStatus = status;
+    }
+
+    public void setMessage(String message) {
+        this.mMessage = message;
+    }
 }
