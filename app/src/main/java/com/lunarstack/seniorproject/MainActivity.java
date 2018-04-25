@@ -2,7 +2,6 @@ package com.lunarstack.seniorproject;
 
 import android.content.Intent;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.util.SimpleArrayMap;
@@ -47,8 +46,8 @@ public class MainActivity extends ConnectionsActivity {
     private ArrayList<Message> mMessages;
     private MessagesListAdapter mMessagesListAdapter;
 
-    private final SimpleArrayMap<Long, NotificationCompat.Builder> incomingPayloads = new SimpleArrayMap<>();
-    private final SimpleArrayMap<Long, NotificationCompat.Builder> outgoingPayloads = new SimpleArrayMap<>();
+    //private final SimpleArrayMap<Long, NotificationCompat.Builder> incomingPayloads = new SimpleArrayMap<>();
+    //private final SimpleArrayMap<Long, NotificationCompat.Builder> outgoingPayloads = new SimpleArrayMap<>();
 
 
 
@@ -210,8 +209,8 @@ public class MainActivity extends ConnectionsActivity {
                 startAdvertising();
                 break;
             case CONNECTED:
-                stopAdvertising();
-                startDiscovering();
+                //stopAdvertising();
+                //startDiscovering();
                 break;
             case UNKNOWN:
                 stopAllEndpoints();
