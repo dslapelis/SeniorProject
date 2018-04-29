@@ -136,7 +136,7 @@ public class MainActivity extends ConnectionsActivity {
      */
     @Override
     protected void onEndpointDiscovered(Endpoint endpoint) {
-        Log.d(TAG, endpoint.getName());
+        //Log.d(TAG, endpoint.getName());
         // We found an advertiser!
         stopDiscovering();
         connectToEndpoint(endpoint);
@@ -293,11 +293,11 @@ public class MainActivity extends ConnectionsActivity {
      */
     private void setState(State state) {
         if (mState == state) {
-            Log.d(TAG, "State set to " + state + " but already in that state");
+            //Log.d(TAG, "State set to " + state + " but already in that state");
             return;
         }
 
-        logD("State set to " + state);
+        //logD("State set to " + state);
         mState = state;
         ((TextView) findViewById(R.id.stateTextView)).setText(mName + " -- " + state);
         onStateChanged(state);
