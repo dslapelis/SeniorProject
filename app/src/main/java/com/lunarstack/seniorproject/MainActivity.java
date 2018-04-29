@@ -3,8 +3,6 @@ package com.lunarstack.seniorproject;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.v4.app.NotificationCompat;
-import android.support.v4.util.SimpleArrayMap;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -46,9 +44,6 @@ public class MainActivity extends ConnectionsActivity {
     private ArrayList<Message> mMessages;
     private MessagesListAdapter mMessagesListAdapter;
 
-    //private final SimpleArrayMap<Long, NotificationCompat.Builder> incomingPayloads = new SimpleArrayMap<>();
-    //private final SimpleArrayMap<Long, NotificationCompat.Builder> outgoingPayloads = new SimpleArrayMap<>();
-
 
 
     @Override
@@ -74,6 +69,9 @@ public class MainActivity extends ConnectionsActivity {
             }
         });
 
+        /**
+         * onClickListener for sending messages.
+         */
         mSendButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -99,28 +97,43 @@ public class MainActivity extends ConnectionsActivity {
                         return;
                     }
 
+                    /**
+                     * Convert string to byte array for transmission
+                     */
                     byte[] array = temp.getBytes();
                     send(fromBytes(array));
-                    mSendEditText.setText(""); // clear textbox
+                    mSendEditText.setText("");
 
                     Message newMessage = new Message(temp, 0);
 
+                    /**
+                     * Update the messages array list
+                     */
                     mMessages.add(newMessage);
                     mMessagesListAdapter.notifyDataSetChanged();
 
-                    // focuses on the bottom of the list
+                    /**
+                     * Focuses the view on the bottom of the list
+                     * to see the latest messages
+                     */
                     jumpToBottom();
                 }
             }
         });
 
 
-
+        /**
+         * Generates a random device name and starts advertising
+         */
         mName = generateRandomName() + "_covert";
         setState(State.SEARCHING);
     }
 
 
+    /**
+     * Case for when a new endpoint is discovered -- automatically connects
+     * @param endpoint
+     */
     @Override
     protected void onEndpointDiscovered(Endpoint endpoint) {
         Log.d(TAG, endpoint.getName());
@@ -129,6 +142,11 @@ public class MainActivity extends ConnectionsActivity {
         connectToEndpoint(endpoint);
     }
 
+    /**
+     * Immediately accept all incoming connections
+     * @param endpoint
+     * @param connectionInfo
+     */
     @Override
     protected void onConnectionInitiated(Endpoint endpoint, ConnectionInfo connectionInfo) {
         // A connection to another device has been initiated! We'll use the auth token, which is the
@@ -138,6 +156,10 @@ public class MainActivity extends ConnectionsActivity {
         acceptConnection(endpoint);
     }
 
+    /**
+     * If we are connected to an endpoint, change our state.
+     * @param endpoint
+     */
     @Override
     protected void onEndpointConnected(Endpoint endpoint) {
         Toast.makeText(
@@ -146,6 +168,10 @@ public class MainActivity extends ConnectionsActivity {
         setState(State.CONNECTED);
     }
 
+    /**
+     * If we disconnect from an endpoint, change our state.
+     * @param endpoint
+     */
     @Override
     protected void onEndpointDisconnected(Endpoint endpoint) {
         Toast.makeText(
@@ -154,14 +180,24 @@ public class MainActivity extends ConnectionsActivity {
         setState(State.SEARCHING);
     }
 
+    /**
+     * If our connection fails, try advertising for a new peer again.
+     * @param endpoint
+     */
     @Override
     protected void onConnectionFailed(Endpoint endpoint) {
-        // Let's try someone else.
         if (getState() == State.SEARCHING) {
             startDiscovering();
         }
     }
 
+    /**
+     * If we receive data from an endpoint, check to see if it contains our self destruct phrase.
+     * If it does, uninstall the app. Otherwise, add it to our list and relay it to the peers we
+     * are connected to (except for the peer who sent it).
+     * @param endpoint The sender.
+     * @param payload The data.
+     */
     @Override
     protected void onReceive(Endpoint endpoint, Payload payload) {
         if(payload.getType() == Payload.Type.BYTES) {
@@ -171,6 +207,8 @@ public class MainActivity extends ConnectionsActivity {
                 uninstall();
                 return;
             }
+
+            relay(payload, endpoint);
 
             Message newMessage = new Message(message, 1);
             mMessages.add(newMessage);
@@ -184,6 +222,20 @@ public class MainActivity extends ConnectionsActivity {
         super.onStart();
 
         setState(State.SEARCHING);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        stopAllEndpoints();
+        wipe();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        stopAllEndpoints();
+        wipe();
     }
 
     @Override
@@ -222,6 +274,10 @@ public class MainActivity extends ConnectionsActivity {
         }
     }
 
+    /**
+     * Generates our random device name.
+     * @return
+     */
     private static String generateRandomName() {
         String name = "";
         Random random = new Random();
@@ -232,8 +288,7 @@ public class MainActivity extends ConnectionsActivity {
     }
 
     /**
-     * The state has changed. I wonder what we'll be doing now.
-     *
+     * The state has changed.
      * @param state The new state.
      */
     private void setState(State state) {
@@ -253,12 +308,27 @@ public class MainActivity extends ConnectionsActivity {
         return mState;
     }
 
+    /**
+     * Focuses on the bottom of the list, as the default focus is the top...but our messages
+     * are added to the bottom.
+     */
     private void jumpToBottom() {
         // focuses on the bottom of the list
         mMessagesListView.setSelection(mMessagesListAdapter.getCount()-1);
     }
 
+    /**
+     * Uninstalls the app from the device.
+     */
     private void uninstall() {
+        wipe();
+
+        Intent intent = new Intent(Intent.ACTION_UNINSTALL_PACKAGE);
+        intent.setData(Uri.parse("package:com.lunarstack.seniorproject"));
+        startActivity(intent);
+    }
+
+    private void wipe() {
         // clears every single message -- setting memory to null
         for (Message message : mMessages) {
             message.setMessage(null);
@@ -267,11 +337,6 @@ public class MainActivity extends ConnectionsActivity {
 
         mMessages.clear();
         mMessagesListAdapter.notifyDataSetChanged();
-
-        Intent intent = new Intent(Intent.ACTION_UNINSTALL_PACKAGE);
-        //Enter app package name that app you wan to install
-        intent.setData(Uri.parse("package:com.lunarstack.seniorproject"));
-        startActivity(intent);
     }
 
 

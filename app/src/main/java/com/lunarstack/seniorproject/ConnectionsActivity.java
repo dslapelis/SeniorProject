@@ -31,6 +31,7 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
@@ -53,6 +54,8 @@ public abstract class ConnectionsActivity extends AppCompatActivity {
                     Manifest.permission.CHANGE_WIFI_STATE,
                     Manifest.permission.ACCESS_COARSE_LOCATION,
             };
+
+    private static final String TAG = "CONNECTIONS ACTIVITY";
 
     private static final int REQUEST_CODE_REQUIRED_PERMISSIONS = 1;
 
@@ -198,7 +201,7 @@ public abstract class ConnectionsActivity extends AppCompatActivity {
                         new OnSuccessListener<Void>() {
                             @Override
                             public void onSuccess(Void unusedResult) {
-                                logV("Now advertising endpoint " + localEndpointName);
+                                //logV("Now advertising endpoint " + localEndpointName);
                                 onAdvertisingStarted();
                             }
                         })
@@ -207,7 +210,7 @@ public abstract class ConnectionsActivity extends AppCompatActivity {
                             @Override
                             public void onFailure(@NonNull Exception e) {
                                 mIsAdvertising = false;
-                                logW("startAdvertising() failed.", e);
+                                //logW("startAdvertising() failed.", e);
                                 onAdvertisingFailed();
                             }
                         });
@@ -246,7 +249,7 @@ public abstract class ConnectionsActivity extends AppCompatActivity {
                         new OnFailureListener() {
                             @Override
                             public void onFailure(@NonNull Exception e) {
-                                logW("acceptConnection() failed.", e);
+                                //logW("acceptConnection() failed.", e);
                             }
                         });
     }
@@ -259,7 +262,7 @@ public abstract class ConnectionsActivity extends AppCompatActivity {
                         new OnFailureListener() {
                             @Override
                             public void onFailure(@NonNull Exception e) {
-                                logW("rejectConnection() failed.", e);
+                                //logW("rejectConnection() failed.", e);
                             }
                         });
     }
@@ -278,10 +281,10 @@ public abstract class ConnectionsActivity extends AppCompatActivity {
                         new EndpointDiscoveryCallback() {
                             @Override
                             public void onEndpointFound(String endpointId, DiscoveredEndpointInfo info) {
-                                logD(
+                                /*logD(
                                         String.format(
                                                 "onEndpointFound(endpointId=%s, serviceId=%s, endpointName=%s)",
-                                                endpointId, info.getServiceId(), info.getEndpointName()));
+                                                endpointId, info.getServiceId(), info.getEndpointName()));*/
 
                                 if (getServiceId().equals(info.getServiceId())) {
                                     Endpoint endpoint = new Endpoint(endpointId, info.getEndpointName());
@@ -292,7 +295,7 @@ public abstract class ConnectionsActivity extends AppCompatActivity {
 
                             @Override
                             public void onEndpointLost(String endpointId) {
-                                logD(String.format("onEndpointLost(endpointId=%s)", endpointId));
+                                //logD(String.format("onEndpointLost(endpointId=%s)", endpointId));
                             }
                         },
                         new DiscoveryOptions(getStrategy()))
@@ -308,7 +311,7 @@ public abstract class ConnectionsActivity extends AppCompatActivity {
                             @Override
                             public void onFailure(@NonNull Exception e) {
                                 mIsDiscovering = false;
-                                logW("startDiscovering() failed.", e);
+                                //logW("startDiscovering() failed.", e);
                                 onDiscoveryFailed();
                             }
                         });
@@ -379,7 +382,7 @@ public abstract class ConnectionsActivity extends AppCompatActivity {
                         new OnFailureListener() {
                             @Override
                             public void onFailure(@NonNull Exception e) {
-                                logW("requestConnection() failed.", e);
+                                //logW("requestConnection() failed.", e);
                                 mIsConnecting = false;
                                 onConnectionFailed(endpoint);
                             }
@@ -392,13 +395,13 @@ public abstract class ConnectionsActivity extends AppCompatActivity {
     }
 
     private void connectedToEndpoint(Endpoint endpoint) {
-        logD(String.format("connectedToEndpoint(endpoint=%s)", endpoint));
+        //logD(String.format("connectedToEndpoint(endpoint=%s)", endpoint));
         mEstablishedConnections.put(endpoint.getId(), endpoint);
         onEndpointConnected(endpoint);
     }
 
     private void disconnectedFromEndpoint(Endpoint endpoint) {
-        logD(String.format("disconnectedFromEndpoint(endpoint=%s)", endpoint));
+        //logD(String.format("disconnectedFromEndpoint(endpoint=%s)", endpoint));
         mEstablishedConnections.remove(endpoint.getId());
         onEndpointDisconnected(endpoint);
     }
@@ -439,6 +442,30 @@ public abstract class ConnectionsActivity extends AppCompatActivity {
     }
 
     private void send(Payload payload, Set<String> endpoints) {
+        mConnectionsClient
+                .sendPayload(new ArrayList<>(endpoints), payload)
+                .addOnFailureListener(
+                        new OnFailureListener() {
+                            @Override
+                            public void onFailure(@NonNull Exception e) {
+                                //logW("sendPayload() failed.", e);
+                            }
+                        });
+    }
+
+    protected void relay(Payload payload, Endpoint endpoint) {
+        Map<String, Endpoint> endpoints = new HashMap<>();
+        endpoints.putAll(mEstablishedConnections);
+        //Log.d(TAG, endpoints.toString());
+        endpoints.remove(endpoint.getId());
+        if(!endpoints.isEmpty()) {
+            relay(payload, endpoints.keySet(), endpoint);
+        }
+    }
+
+    private void relay(Payload payload, Set<String> endpoints, Endpoint endpoint) {
+        //Log.d(TAG, endpoint.toString());
+        //Log.d(TAG, Boolean.toString(endpoints.contains(endpoint)));
         mConnectionsClient
                 .sendPayload(new ArrayList<>(endpoints), payload)
                 .addOnFailureListener(
