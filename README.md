@@ -1,0 +1,4 @@
+# What the heck is this
+Good question! This is an Android application I built for my senior project. It is a covert-communications application. It allows users to communicate completely off of WLAN, LAN, and cellular. It sets up a peer-to-peer network via the Google Nearby Connections API. It allows for group chats (tested up to 3 devices) to connect to the randomly selected host and chat.
+
+The idea was that this app could be used in countries or areas that are under government surveillance and would like to communicate completely off public networks...kind of like a walkie-talkie. The usernames are randomly generated, and the users can set emergency phrases so that other users can completely erase the chat history. This also clears the messages from memory so that the device can't be imaged and analyzed for the messages.
